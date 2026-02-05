@@ -21,6 +21,7 @@ acs.map <- get_acs(geography = "tract",
   
 )
 
+
 years <- seq(2015,2022,1)
 
 for(i in years){
@@ -37,6 +38,7 @@ per_crime <- TEMP %>%
          longitude = coalesce(longitude, X),
          count = coalesce(count, Count)) %>%
   select(count, year, latitute, longitude)
+
 
 per_crime_map <- st_as_sf(per_crime, coords = c("longitude", "latitute"),
                       crs = st_crs(acs.map)) %>%
@@ -88,3 +90,4 @@ ggplot(agg_per_crime) +
 ggplot(agg_prop_crime) +
   geom_sf(aes(fill = count)) +
   facet_wrap(~ year)
+
