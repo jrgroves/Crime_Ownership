@@ -10,9 +10,6 @@ library(tidyverse)
 library(tidycensus)
 library(sf)
 
-
-
-
 acs.map <- get_acs(geography = "tract",
                    variables = "B01002_001",
                    state = "29",
@@ -35,39 +32,3 @@ property <- test %>%
   mutate(year = as.numeric(substr(occurred, 1, 4))) %>%
   filter(year > 2019,
          latitude > 0) 
-
-prop.map <-   st_as_sf(property, coords = c("longitude", "latitude"),
-                       crs = st_crs(acs.map)) %>%
-  mutate(count = 1) %>%
-  st_intersection(acs.map) %>%
-  select(-c(variable, estimate, moe))
-
-
-ggplot(prop.map) +
-  geom_sf(aes(color = count)) +
-  facet_wrap(~ year)
-
-%>%
-  st_intersection(., acs.map) %>%
-  select(-c(variable, estimate, moe))
-
-agg_prop_crime <- prop_crime_map %>%
-  st_drop_geometry() %>%
-  aggregate(count ~ year + GEOID + NAME, FUN = sum)%>%
-  full_join(., acs.map, by = c("GEOID", "NAME")) %>%
-  select(-c(variable, estimate, moe))%>%
-  filter(!is.na(year)) %>%
-  st_as_sf()
-
-ggplot(agg_prop_crime) +
-  geom_sf(aes(fill = count)) +
-  facet_wrap(~ year)
-
-
-
-
-
-
-
-person <- test %>%
-  filter(OffenseCategory == "Person")
