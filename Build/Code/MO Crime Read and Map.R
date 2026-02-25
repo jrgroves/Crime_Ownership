@@ -1,7 +1,8 @@
-# Reads in and Compiles the Crime Data from Muritala
+#Opens the Missouri Crime Data from the State Police and links it with census tracts.
+#The intersection takes some time so try to run once.
 
-#By: Jeremy Groves
-#Date: January 13, 2026
+#Jeremy R. Groves
+#Created: February 20, 2026
 
 rm(list=ls())
 
@@ -18,6 +19,9 @@ acs.map <- get_acs(geography = "tract",
                    geometry = TRUE
                    
 )
+
+tracts <- acs.map %>%
+  select(GEOID, NAME, geometry)
 
 map <- read_sf("./Build/Input/Map/County_Bdy.shp") %>%
   st_transform(., st_crs(acs.map))
@@ -56,14 +60,8 @@ for(i in seq(2021,2025)){
 }
 
 tract.map <- TEMP
-
 tract.crime <- tract.map %>%
   st_drop_geometry() %>%
   aggregate(event ~ GEOID + year + OffenseCategory, FUN = sum)
 
 save(crime.map, crime, tract.map, tract.crime, file = "./Build/Output/MO_Crime_Prop.RData")
-rm(temp1, temp2, TEMP, test, bbox, i)
-
-
-
-
