@@ -45,7 +45,7 @@ library(sf)
   
 #Connect tract ids to OWN data
   
-  load("./Build/Input/Own10.RData")
+  source("./Build/Code/modown.R")
 
   own <- OWN %>%
     filter(year > 2014) %>%
@@ -54,14 +54,12 @@ library(sf)
   rm(OWN)
   
   own.agg <- own %>%
-    mutate(parcel = 1,
-           owner = case_when(tenure == "OWNER" ~ 1, 
-                             TRUE ~ 0)) %>%
-    select(CENSUS_TRA, year, po_livunit, corporate, trustee, nonprofit, reown, partnership, private, hoa, 
-           muni, owner, parcel) %>%
+    mutate(parcel = 1) %>%
+    select(CENSUS_TRA, year, corporate, trustee, nonprofit, reown, partnership, private, hoa, 
+           muni, owner, nonowner, ll_city, ll_zip, ll_state, parcel) %>%
     group_by(CENSUS_TRA, year) %>%
-    summarise(across(c(po_livunit:parcel), ~sum(.))) %>%
-    mutate(across(po_livunit:parcel, ~ .x / parcel))
+    summarise(across(c(corporate:parcel), ~sum(.))) %>%
+    mutate(across(corporate:parcel, ~ .x / parcel))
   
 #Connect ownership data to crime data by tracts
   tract.agg <- tract.crime %>%

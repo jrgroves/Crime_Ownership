@@ -2,7 +2,7 @@
 #aggregating the ownership data by tract
 
 #By: Jeremy Groves
-#Date: February 202, 206
+#Date: February 20, 2026
 
 rm(list=ls())
 
@@ -26,11 +26,22 @@ library(sf)
   
   temp <- parcel %>%
     select(PARENT_LOC, geometry) %>%
-    rename("PARID" = "PARENT_LOC") %>%
+    rename("parid" = "PARENT_LOC") %>%
     st_centroid()
   
   buffer1320ft <- temp %>%
     st_intersection(., buffer)
   
   save(buffer, buffer1320ft, file = "./Build/Output/buffer.RData")
+  
+  
+  load("./Build/Output/buffer.RData")
+  source("./Build/Code/modown.R")
+  
+  temp <- buffer1320ft %>%
+    rename("parid" = "PARID") %>%
+    left_join(., OWN, by = c("parid", "year"))
+  
+  temp <- temp %>%
+    filter(!is.na(owner))
   
