@@ -45,10 +45,20 @@ library(sf)
   
 #Connect tract ids to OWN data
   
-  source("./Build/Code/modown.R")
+  load("./Build/Input/Own10.RData")
 
   own <- OWN %>%
-    filter(year > 2014) %>%
+    filter(year > 2019) %>%
+    mutate(ll_city = case_when(co_city == po_city ~ 1,
+                               TRUE ~0),
+           ll_zip = case_when(co_zip == po_zip ~ 1,
+                              TRUE ~ 0),
+           ll_state = case_when(co_state == "MO" ~ 1,
+                                TRUE ~ 0),
+           nonowner = case_when(tenure == "NONOWNER" ~ 1,
+                                TRUE ~ 0)) %>%
+    select(-starts_with("po_"), -fxc_stradr, -starts_with("co_"),
+           -xcoord, -ycoord, -tenure) %>%
     left_join(., tracts2, by = "parid") %>%
     filter(!is.na(CENSUS_TRA))
   rm(OWN)
@@ -56,7 +66,7 @@ library(sf)
   own.agg <- own %>%
     mutate(parcel = 1) %>%
     select(CENSUS_TRA, year, corporate, trustee, nonprofit, reown, partnership, private, hoa, 
-           muni, owner, nonowner, ll_city, ll_zip, ll_state, parcel) %>%
+           muni, nonowner, ll_city, ll_zip, ll_state, parcel) %>%
     group_by(CENSUS_TRA, year) %>%
     summarise(across(c(corporate:parcel), ~sum(.))) %>%
     mutate(across(corporate:parcel, ~ .x / parcel))

@@ -23,11 +23,6 @@ map <- read_sf("./Build/Input/Map/County_Bdy.shp") %>%
   st_transform(., st_crs(acs.map))
 
 bbox <- st_bbox(map)
-<<<<<<< HEAD
-
-test <- read.csv(file = "./Build/Input/CrimeData/STLC Crime.csv", header = TRUE, as.is = TRUE)
-=======
->>>>>>> 7d8880df9dd84f6196747919dfa20029cfb91b7b
 
 test <- read.csv(file = "./Build/Input/CrimeData/STLC Crime.csv", header = TRUE, as.is = TRUE) %>%
   filter(!is.na(OffenseCategory))
@@ -35,24 +30,6 @@ test <- read.csv(file = "./Build/Input/CrimeData/STLC Crime.csv", header = TRUE,
 crime <- test %>%
   filter(!is.na(latitude),
          !is.na(longitude)) %>%
-<<<<<<< HEAD
-  select(ObjectID, latitude, longitude, occurred) %>%
-  mutate(year = as.numeric(substr(occurred, 1, 4))) %>%
-  filter(between(longitude, bbox[1], bbox[3]),
-         between(latitude, bbox[2], bbox[4]),
-         year > 2020,
-         year < 2026)
-
-
-prop.map <- st_as_sf(property, coords = c("longitude", "latitude"),
-                     crs = st_crs(map)) %>%
-  mutate(property = 1) %>%
-  st_intersection(., acs.map)
-
-ggplot(prop.map) +
-  geom_sf(aes(fill = property)) +
-  facet_wrap(~year) 
-=======
   select(ObjectID, latitude, longitude, occurred, OffenseCategory) %>%
   mutate(year = as.numeric(substr(occurred, 1, 4)),
          event = 1) %>%
@@ -89,5 +66,5 @@ rm(temp1, temp2, TEMP, test, bbox, i)
 
 
 
->>>>>>> 7d8880df9dd84f6196747919dfa20029cfb91b7b
+
 
