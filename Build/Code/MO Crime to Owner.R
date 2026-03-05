@@ -1,6 +1,8 @@
 #Uses the RData file of the MO State Police Crime Data and links it with ownership data after
 #aggregating the ownership data by tract
 
+#This is run after the MO Crime Read and Map.R script
+
 #By: Jeremy Groves
 #Date: February 202, 206
 
@@ -16,7 +18,7 @@ library(sf)
                      variables = "B01002_001",
                      state = "29",
                      county = "189",
-                     year = 2015,
+                     year = 2020,
                      geometry = TRUE
                      
   )
@@ -32,23 +34,24 @@ library(sf)
   load(file = "./Build/Output/MO_Crime_Prop.RData")
 
 #Map PARID into census tracts
-
-  parcel2 <- parcel %>%
-    select(LOCATOR, CENSUS_TRA) %>%
-    rename("parid" = "LOCATOR") %>%
-    st_drop_geometry()
   
   tracts2 <- tracts %>%
-    mutate(CENSUS_TRA = substr(GEOID, 6, 11)) %>%
-    st_drop_geometry() %>%
-    left_join(., parcel2, by="CENSUS_TRA")
+    select(-NAME) %>%
+    st_transform(., crs = st_crs(parcel))
+
+  parcel2 <- parcel %>%
+    select(LOCATOR) %>%
+    rename("parid" = "LOCATOR") %>%
+    st_centroid() %>%
+    st_join(., tracts2) %>%
+    st_drop_geometry()
   
 #Connect tract ids to OWN data
   
   load("./Build/Input/Own10.RData")
 
   own <- OWN %>%
-    filter(year > 2019) %>%
+    filter(year > 2014) %>%
     mutate(ll_city = case_when(co_city == po_city ~ 1,
                                TRUE ~0),
            ll_zip = case_when(co_zip == po_zip ~ 1,
@@ -58,25 +61,22 @@ library(sf)
            nonowner = case_when(tenure == "NONOWNER" ~ 1,
                                 TRUE ~ 0)) %>%
     select(-starts_with("po_"), -fxc_stradr, -starts_with("co_"),
-           -xcoord, -ycoord, -tenure) %>%
-    left_join(., tracts2, by = "parid") %>%
-    filter(!is.na(CENSUS_TRA))
+           -xcoord, -ycoord, -tenure)  %>%
+    left_join(., parcel2, by = "parid", relationship = "many-to-many") %>%
+    distinct()%>%
+    filter(!is.na(GEOID))
   rm(OWN)
   
   own.agg <- own %>%
     mutate(parcel = 1) %>%
-    select(CENSUS_TRA, year, corporate, trustee, nonprofit, reown, partnership, private, hoa, 
+    select(GEOID, year, corporate, trustee, nonprofit, reown, partnership, private, hoa, 
            muni, nonowner, ll_city, ll_zip, ll_state, parcel) %>%
-    group_by(CENSUS_TRA, year) %>%
-    summarise(across(c(corporate:parcel), ~sum(.))) %>%
+    summarise(across(c(corporate:parcel), ~sum(.)), .by = c(GEOID, year)) %>%
     mutate(across(corporate:parcel, ~ .x / parcel))
   
 #Connect ownership data to crime data by tracts
   tract.agg <- tract.crime %>%
-    filter(OffenseCategory!="N/A") %>%
-    mutate(CENSUS_TRA = substr(GEOID, 6, 11)) %>%
-    full_join(., own.agg , by = c("CENSUS_TRA", "year")) %>%
-    filter(year > 2020) %>%
+    full_join(., own.agg , by = c("GEOID", "year")) %>%
     filter(!is.na(parcel))
   
   save(tract.agg, file = "./Build/Output/tractagg.RData")

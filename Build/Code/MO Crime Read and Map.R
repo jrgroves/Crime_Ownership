@@ -11,57 +11,83 @@ library(tidyverse)
 library(tidycensus)
 library(sf)
 
-acs.map <- get_acs(geography = "tract",
-                   variables = "B01002_001",
-                   state = "29",
-                   county = "189",
-                   year = 2015,
-                   geometry = TRUE
-                   
-)
+#Load basics
 
-tracts <- acs.map %>%
-  select(GEOID, NAME, geometry)
-
-map <- read_sf("./Build/Input/Map/County_Bdy.shp") %>%
-  st_transform(., st_crs(acs.map))
-
-bbox <- st_bbox(map)
-
-test <- read.csv(file = "./Build/Input/CrimeData/STLC Crime.csv", header = TRUE, as.is = TRUE) %>%
-  filter(!is.na(OffenseCategory))
-
-crime <- test %>%
-  filter(!is.na(latitude),
-         !is.na(longitude)) %>%
-  select(ObjectID, latitude, longitude, occurred, OffenseCategory) %>%
-  mutate(year = as.numeric(substr(occurred, 1, 4)),
-         event = 1) %>%
-  filter(year > 2020,
-         year < 2026,
-         between(latitude, bbox[2], bbox[4]),
-         between(longitude, bbox[1], bbox[3]))
-
-crime.map <- st_as_sf(crime, coords = c("longitude", "latitude"), crs = st_crs(map))
-
-tract.map <- acs.map %>%
-  select(GEOID, geometry) %>%
-  st_make_valid()
-
-for(i in seq(2021,2025)){
-  temp1 <- crime.map %>%
-    filter(year == i)
+  #Download tract map to get county boundaries becomes some locations are outside the county
+    acs.map <- get_acs(geography = "tract",
+                       variables = "B01002_001",
+                       state = "29",
+                       county = "189",
+                       year = 2020,
+                       geometry = TRUE
+                       
+    )
+    
+    tracts <- acs.map %>%
+      select(GEOID, NAME, geometry)
   
-  temp2 <- st_intersection(tract.map, temp1)
-  
-  temp2$year <- i
-  
-  ifelse(i==2021, TEMP <- temp2, TEMP <- bind_rows(TEMP, temp2))
-}
+    map <- read_sf("./Build/Input/Map/County_Bdy.shp") %>%
+      st_transform(., st_crs(acs.map))
+    
+    bbox <- st_bbox(map)
 
-tract.map <- TEMP
-tract.crime <- tract.map %>%
-  st_drop_geometry() %>%
-  aggregate(event ~ GEOID + year + OffenseCategory, FUN = sum)
+  #Read in the data from the MO State Police
+  
+    test <- read.csv(file = "./Build/Input/CrimeData/STLC Crime.csv", header = TRUE, as.is = TRUE) %>%
+      filter(!is.na(OffenseCategory))
+    
+    crime <- test %>%
+      filter(!is.na(latitude),
+             !is.na(longitude)) %>%
+      select(ObjectID, latitude, longitude, occurred, OffenseCategory) %>%
+      mutate(year = as.numeric(substr(occurred, 1, 4)),
+             event = 1) %>%
+      filter(year > 2020,
+             year < 2026,
+             between(latitude, bbox[2], bbox[4]),
+             between(longitude, bbox[1], bbox[3])) %>%
+      select(-c(ObjectID, occurred)) %>%
+      filter(OffenseCategory != "Society",
+             OffenseCategory != "N/A")
 
-save(crime.map, crime, tract.map, tract.crime, file = "./Build/Output/MO_Crime_Prop.RData")
+  #Read Rest of Data from Muritala 
+
+    for(i in seq(2015,2020)){
+      temp <- read_excel(paste0("./Build/Input/CrimeData/PersonCrime_",i,".xlsx")) 
+      temp$year <- i
+      temp$OffenseCategory = "Person"
+      
+      ifelse(i==2015, CRIME <- temp, CRIME <- bind_rows(CRIME, temp))
+      
+      temp <- read_excel(paste0("./Build/Input/CrimeData/PropertyCrime_",i,".xlsx")) 
+      temp$year <- i
+      temp$OffenseCategory = "Property"
+      
+      CRIME <- bind_rows(CRIME, temp)
+    }
+    
+  #Merges the two datasets to one larger set
+    CRIME <- CRIME %>%
+      rename("event" = "Count",
+             "latitude" = "Y",
+             "longitude" = "X") %>%
+      bind_rows(., crime)
+  
+  rm(test, temp, crime, bbox, i)
+  
+#Link to Maps
+  #Create SF object from crime data
+    
+    crime.map <- st_as_sf(CRIME, coords = c("longitude", "latitude"), crs = st_crs(map))
+
+  #Prepare the census tract map (NOTE, Interacting with 2020 census tracts)        
+    tract.map <- acs.map %>%
+      select(GEOID, geometry) %>%
+      st_make_valid()
+    
+  #Do spatial join of crime locations with census tracts
+    tract.crime <- st_join(crime.map, tract.map) %>%
+      st_drop_geometry() %>%
+      aggregate(event ~ GEOID + year + OffenseCategory, FUN = sum)
+
+save(crime.map, CRIME, tract.map, tract.crime, file = "./Build/Output/MO_Crime_Prop.RData")
