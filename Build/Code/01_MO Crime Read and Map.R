@@ -1,8 +1,10 @@
-#Opens the Missouri Crime Data from the State Police and links it with census tracts.
-#The intersection takes some time so try to run once.
+#Opens the Missouri Crime Data from the State Police and links it with census tracts. Also uses data collected by
+#Muritala to add the years 2015 through 2020 to the Missouri State Police Data.
+
 
 #Jeremy R. Groves
 #Created: February 20, 2026
+#Updated: March 3, 2026 - Added data from Muritala and replace st_intersection with st_join for speed
 
 rm(list=ls())
 

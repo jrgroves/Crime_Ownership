@@ -56,7 +56,7 @@ library(sf)
                                TRUE ~0),
            ll_zip = case_when(co_zip == po_zip ~ 1,
                               TRUE ~ 0),
-           ll_state = case_when(co_state == "MO" ~ 1,
+           ll_state = case_when(co_state == "mo" ~ 1,
                                 TRUE ~ 0),
            nonowner = case_when(tenure == "NONOWNER" ~ 1,
                                 TRUE ~ 0)) %>%
