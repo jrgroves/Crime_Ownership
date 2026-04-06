@@ -113,6 +113,7 @@ temp1 <- core.tract %>%
   rename("Tract_Mean" = "rate")
 temp2 <- core.tract %>%
   select(year, OffenseCategory, event, rate) %>%
+<<<<<<< HEAD
   aggregate(rate ~ year + OffenseCategory, FUN = max) %>%
   rename("Tract_Max" = "rate")
 temp3 <- core.tract %>%
@@ -122,6 +123,17 @@ temp3 <- core.tract %>%
 temp4 <- core.tract %>%
   select(year, OffenseCategory, event, rate) %>%
   aggregate(rate ~ year + OffenseCategory, FUN = sd) %>%
+=======
+  aggregate(rate ~ year + OffenseCategory, FUN = mean) %>%
+  rename("Tract_Max" = "rate")
+temp3 <- core.tract %>%
+  select(year, OffenseCategory, event, rate) %>%
+  aggregate(rate ~ year + OffenseCategory, FUN = mean) %>%
+  rename("Tract_Min" = "rate")
+temp4 <- core.tract %>%
+  select(year, OffenseCategory, event, rate) %>%
+  aggregate(rate ~ year + OffenseCategory, FUN = mean) %>%
+>>>>>>> f36080fafbd04e849897db467da67e32f3e6c7d9
   rename("Tract_Std" = "rate")
 df.list <- list(temp1, temp2, temp3, temp4)
 
@@ -139,6 +151,7 @@ temp1 <- core.grid %>%
   rename("Grid_Mean" = "rate")
 temp2 <- core.grid %>%
   select(year, OffenseCategory, event, rate) %>%
+<<<<<<< HEAD
   aggregate(rate ~ year + OffenseCategory, FUN = max) %>%
   rename("Grid_Max" = "rate")
 temp3 <- core.grid %>%
@@ -148,6 +161,17 @@ temp3 <- core.grid %>%
 temp4 <- core.grid %>%
   select(year, OffenseCategory, event, rate) %>%
   aggregate(rate ~ year + OffenseCategory, FUN = sd) %>%
+=======
+  aggregate(rate ~ year + OffenseCategory, FUN = mean) %>%
+  rename("Grid_Max" = "rate")
+temp3 <- core.grid %>%
+  select(year, OffenseCategory, event, rate) %>%
+  aggregate(rate ~ year + OffenseCategory, FUN = mean) %>%
+  rename("Grid_Min" = "rate")
+temp4 <- core.grid %>%
+  select(year, OffenseCategory, event, rate) %>%
+  aggregate(rate ~ year + OffenseCategory, FUN = mean) %>%
+>>>>>>> f36080fafbd04e849897db467da67e32f3e6c7d9
   rename("Grid_Std" = "rate")
 df.list <- list(temp1, temp2, temp3, temp4)
 temp.b <- df.list %>%
@@ -162,6 +186,7 @@ temp.b <- df.list %>%
 
 flextable(temp.b) %>%
   separate_header() %>%
+<<<<<<< HEAD
   add_header_lines(values = "Table 3: Crime Summary by Census Tract and Grid") %>%
   align(align = "center", part = "header") %>%
   colformat_double(digits = 4) %>%
@@ -173,5 +198,15 @@ flextable(temp.b) %>%
   hline(i = 7, part = "body") %>%
   vline(j = 2, part = "body") %>%
   vline(j = 6, part = "body") %>%
+=======
+  add_header_lines(values = "Table 3: Crime Summary by Census Tract") 
+
+%>%
+  merge_at(i = 1:7, j = "OffenseCategory") %>%
+  merge_at(i = 8:14, j = "OffenseCategory") %>%
+  set_header_labels(OffenseCategory = "Offense Category") %>%
+  bold(i = 1, part = "header") %>%
+  hline(i = 7, part = "body") %>%
+>>>>>>> f36080fafbd04e849897db467da67e32f3e6c7d9
   autofit() %>%
   save_as_docx( path = "./Paper/table3.docx")
