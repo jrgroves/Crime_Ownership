@@ -30,34 +30,3 @@ load("./Build/Output/Grid_data.RData")
     distinct() %>%
     filter(!is.na(owner)) #Removes 4211 grid cells with no parcel data.
   
-
-sum.dat1 <- core.tract %>%
-  select(-c(GEOID, parcel, area)) %>%
-  relocate(rate, .before = year) %>%
-  relocate(c(Tot_Pop, Med_Inc), .after = last_col()) %>%
-  tbl_strata(
-    strata = OffenseCategory,
-    .tbl_fun = 
-      ~.x %>%
-      tbl_summary(by = year,
-                  digits = list(all_continuous() ~ c(4,4),
-                                all_categorical() ~ c(2,0)),
-                  statistic = list(all_continuous() ~ "{mean} ({sd})",
-                                   all_categorical() ~ "{p}% {n}")),
-    .header = "**{strata}**, N = {n}")
-
-sum.dat2 <- core.grid %>%
-  select(-c(grid_id, GEOID)) %>%
-  tbl_strata(
-    strata = OffenseCategory,
-    .tbl_fun = 
-      ~.x %>%
-      tbl_summary(by = year,
-                  digits = list(all_continuous() ~ c(4,4),
-                                all_categorical() ~ c(2,0)),
-                  statistic = list(all_continuous() ~ "{mean} ({sd})",
-                                   all_categorical() ~ "{p}% {n}")),
-    .header = "**{strata}**, N = {n}")
-
-
-
