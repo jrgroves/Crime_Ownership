@@ -60,7 +60,7 @@ library(sf)
                                 TRUE ~ 0),
            nonowner = case_when(tenure == "NONOWNER" ~ 1,
                                 TRUE ~ 0)) %>%
-    select(-starts_with("po_"), -fxc_stradr, -starts_with("co_"),
+    select(-starts_with("po_"), -starts_with("co_"),
            -xcoord, -ycoord, -tenure)  %>%
     left_join(., parcel2, by = "parid", relationship = "many-to-many") %>%
     distinct()%>%
