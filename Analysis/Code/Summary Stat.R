@@ -307,7 +307,7 @@ flextable(TEMP) %>%
 
 #Grid level aggregation  
   temp.a <- core.grid %>%
-    select(year, grid_id, Tot_Pop, Med_Inc, dens, starts_with("per")) %>%
+    select(year, grid_id, Tot_Pop, starts_with("per")) %>%
     distinct(grid_id, year, .keep_all = TRUE) %>%
     filter(year > 2017) %>%
     filter(year < 2025) %>%
@@ -365,5 +365,3 @@ flextable(TEMP) %>%
   autofit()
 
 
-%>%
-  save_as_docx( path = "./Paper/table4.docx")
