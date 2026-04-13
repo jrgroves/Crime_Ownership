@@ -52,13 +52,14 @@ load("./Build/Input/Own10.Rdata")
                                class == "A" ~ "Agricultural",
                                class == "M" ~ "Multi",
                                TRUE ~ "All")) %>%
-      column_to_rownames(var = "class")
+      column_to_rownames(var = "class")     %>%
+      select(-c(legal, other))
     
     names(by.clas) <- str_to_sentence(names(by.clas))
 
   #Creating Table One
-    temp <- as.data.frame(t(by.clas))%>%
-      rownames_to_column("Ownership Type") 
+    temp <- as.data.frame(t(by.clas))  %>%
+      rownames_to_column("Ownership Type")  
     
     t1 <- flextable(temp) %>%
       add_body_row(values = paste0("Observations = ", nrow(own)),

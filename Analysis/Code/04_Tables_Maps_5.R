@@ -62,7 +62,7 @@ ft_theme <- function(ft) {
     font(fontname = "Times New Roman", part = "all") %>%
     fontsize(size = 10, part = "all") %>%
     bold(part = "header") %>%
-    align(align = "center", part = "all") %>%
+    align(align = "center", part = "header") %>%
     align(j = 1, align = "left", part = "all") %>%
     padding(padding = 3, part = "all") %>%
     set_table_properties(width = 1, layout = "autofit")
@@ -256,7 +256,7 @@ make_table4 <- function() {
 
 make_table5 <- function() {
   extract_cs <- function(imp, model, crime) {
-    idx    <- which(colnames(imp$sres$direct) == "corporate")
+    idx    <- which(colnames(imp$sres$direct) == "corporate dy/dx")
     dir    <- imp$res$direct[idx, 1]
     ind    <- imp$res$indirect[idx, 1]
     tot    <- imp$res$total[idx, 1]
@@ -344,7 +344,8 @@ t6 <- make_table6()
 # =============================================================================
 
 ft1 <- flextable(t1) %>% ft_theme() %>%
-  set_caption("Table 1. Descriptive Statistics") %>%
+  align(align = "center", part = "header") %>%
+  add_header_lines(values = "Table 2 Descriptive Statistics") %>%
   colformat_double(j = c("Mean","Median","SD","Min","Max"), digits = 3) %>%
   colformat_num(j = "N", big.mark = ",", digits = 0) %>%
   footnote(i=1, j=1, part="header",
@@ -352,33 +353,38 @@ ft1 <- flextable(t1) %>% ft_theme() %>%
            ref_symbols="a")
 
 ft2 <- flextable(t2) %>% ft_theme() %>%
-  set_caption("Table 2. Global Moran's I \u2014 Spatial Autocorrelation") %>%
+  align(align = "center", part = "header") %>%
+  add_header_lines(values = "Table 3 Global Moran's I \u2014 Spatial Autocorrelation") %>%
   footnote(i=1, j=1, part="header",
            value=as_paragraph("Tract weights: queen contiguity (standard for administrative units with no connectivity gaps). Grid weights: k-nearest neighbours (k=5); queen contiguity excluded due to 29 disconnected subgraphs from missing parcel cells. All statistics confirm significant positive spatial clustering."),
            ref_symbols="a")
 
 ft3 <- flextable(t3) %>% ft_theme() %>%
-  set_caption("Table 3. Cross-Sectional SAR Models (2024)") %>%
+  align(align = "center", part = "header") %>%
+  add_header_lines(values =  "Table 4 Cross-Sectional SAR Models (2024)") %>%
   bold(i = ~ Variable == "Corporate ownership %") %>%
   footnote(i=1, j=1, part="header",
            value=as_paragraph("Dependent variable: ln(crime rate+1). Standard errors in parentheses. *** p<0.001, ** p<0.01, * p<0.05, \u2020 p<0.1. per_wht excluded (VIF=16.3, r=-0.965 with per_blk). Spatial weights: k-NN (k=4) for all models; ensures fully connected weight matrices. SAR selected via LM diagnostic tests (adjRSlag dominant). Grid models include tract fixed effects; luc.com excluded (collinear with luc.ag + luc.res). Owner-occupancy % negative and significant in grid models, consistent with guardianship mechanism. Resid. AC p: non-significant confirms spatial dependence absorbed."),
            ref_symbols="a")
 
 ft4 <- flextable(t4) %>% ft_theme() %>%
-  set_caption("Table 4. Spatial Panel SAR Models \u2014 Tract Scale (2018\u20132024)") %>%
+  align(align = "center", part = "header") %>%
+  add_header_lines(values = "Table 5 Spatial Panel SAR Models \u2014 Tract Scale (2018\u20132024)") %>%
   bold(i = ~ Variable == "Corporate ownership %") %>%
   footnote(i=1, j=1, part="header",
            value=as_paragraph("Dependent variable: ln(crime rate+1). Standard errors in parentheses. *** p<0.001, ** p<0.01, * p<0.05, \u2020 p<0.1. Panel: 149 balanced tracts, 2018-2024. per_wht excluded (VIF=16.3). Spatial weights: k-NN (k=4). Individual FE preferred; two-way FE attenuates due to low within-tract variation in ownership (median SD=0.008). Vacancy rate unavailable; guardianship mechanism cannot be directly tested at tract scale."),
            ref_symbols="a")
 
 ft5 <- flextable(t5) %>% ft_theme() %>%
-  set_caption("Table 5. Direct, Indirect, and Total Effects of Corporate Ownership") %>%
+  align(align = "center", part = "header") %>%
+  add_header_lines(values = "Table 6 Direct, Indirect, and Total Effects of Corporate Ownership") %>%
   footnote(i=1, j=1, part="header",
            value=as_paragraph("Standard errors from simulation (R=999). *** p<0.001, ** p<0.01, * p<0.05. Effects represent impact of one-unit increase in corporate ownership share; multiply by 0.10 for 10pp increase. Direct: own-unit impact including spatial feedback. Indirect: spillover to neighbouring units. Total = Direct + Indirect. Tract scale only."),
            ref_symbols="a")
 
 ft6 <- flextable(t6) %>% ft_theme() %>%
-  set_caption("Table 6. Robustness Checks \u2014 Spatial Panel Models (Individual FE, 149 Tracts, 2018\u20132024)") %>%
+  align(align = "center", part = "header") %>%
+  add_header_lines(values = "Table 7 Robustness Checks \u2014 Spatial Panel Models (Individual FE, 149 Tracts, 2018\u20132024)") %>%
   bold(i = ~ Variable == "Corporate ownership %") %>%
   footnote(i=1, j=1, part="header",
            value=as_paragraph("Dependent variable: ln(crime rate+1). Standard errors in parentheses. *** p<0.001, ** p<0.01, * p<0.05, \u2020 p<0.1. SDM (k=4): spatial Durbin model; W\u00d7Corporate insignificant confirms SAR correctly specified. SAR k=5: alternative spatial weights (k=5); corporate coefficient stable and AIC improves, confirming robustness to weights choice."),
@@ -453,10 +459,14 @@ lmap <- function(sf_obj, title, borders = TRUE) {
   m
 }
 
-tmap_save(tmap_arrange(
-  qmap(tract_map, "corporate", "(a) Tract: corporate ownership %"),
-  qmap(grid_map,  "corporate", "(b) Grid: corporate ownership %", borders=FALSE),
-  ncol=2), "./Analysis/Output/Maps/Fig1_Corporate_Ownership.png",
+
+
+tmap_save(
+  tm1<- tmap_arrange(
+    qmap(tract_map, "corporate", "(a) Tract: corporate ownership %"),
+    qmap(grid_map,  "corporate", "(b) Grid: corporate ownership %", borders=FALSE),
+   ncol=2),
+  "./Analysis/Output/Maps/Fig1_Corporate_Ownership.png",
   width=10, height=5, dpi=300)
 
 tmap_save(tmap_arrange(

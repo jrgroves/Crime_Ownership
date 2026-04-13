@@ -33,6 +33,8 @@
 #   - Panel: 149 balanced tracts, 2018-2024 (pspatreg requirement)
 # =============================================================================
 
+rm(list=ls())
+
 library(tidyverse)
 library(sf)
 library(spdep)

@@ -1,1 +1,5 @@
 *.RData
+Grid_data.RData
+MO_Crime_Prop.RData
+core_panels_augmented.RData
+tractagg.RData

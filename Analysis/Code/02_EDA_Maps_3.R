@@ -17,6 +17,7 @@
 #   - rate_wins: winsorized at 99th percentile for grid display only
 #   - tmap version: 4.2 — uses tm_scale_intervals() not style="quantile"
 # =============================================================================
+rm(list=ls())
 
 library(tidyverse)
 library(sf)
