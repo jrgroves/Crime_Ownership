@@ -45,7 +45,7 @@ load("./Build/Input/Own10.Rdata")
     
     by.clas <- own %>%
       select(-year) %>%
-     summarize(across(corporate:nonowner, ~mean(.x)), .by = class) %>%
+      summarize(across(corporate:nonowner, ~mean(.x)), .by = class) %>%
       bind_rows(., temp) %>%
       mutate(class = case_when(class == "R" ~ "Residential",
                                class == "C" ~ "Commerical",
@@ -55,6 +55,7 @@ load("./Build/Input/Own10.Rdata")
       column_to_rownames(var = "class")     %>%
       select(-c(legal, other))
     
+
     names(by.clas) <- str_to_sentence(names(by.clas))
 
   #Creating Table One
@@ -77,6 +78,7 @@ load("./Build/Input/Own10.Rdata")
 
   #Creating Figure One
     temp <- own %>%
+      filter(class == "R" | class == "M") %>%
       select(year, private, corporate, legal, other) %>%
       summarize(across(private:other, mean), .by = year) %>%
       select(-private)   %>%  #Can break here to get the percentage values for each type.
@@ -90,13 +92,14 @@ load("./Build/Input/Own10.Rdata")
       select(year, OWN_TYPE, Share) %>%
       mutate(Share = round(Share*100, 2))
     
-    
+
     ggplot(temp, aes(fill = OWN_TYPE, x = year, y = Share)) +
       geom_bar(position = "stack", stat = "identity") +
-      geom_text(aes(y = Share/100, label = Share), data = temp2, vjust = -7)+
+      geom_text(aes(y = Share/100, label = Share), data = temp2, vjust = -10)+
       labs(title = "Figure One: Share of Non-Private Ownership by Year",
            x = "Year",
-           fill = "Ownership Type") +
+           fill = "Ownership Type",
+           caption = "Properties Classified as residential or multi only") +
       theme_bw() +
       theme(text = element_text(family = "serif"),
             plot.title = element_text(face = "bold"))
