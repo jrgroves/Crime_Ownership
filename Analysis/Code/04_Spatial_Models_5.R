@@ -1,5 +1,3 @@
-# =============================================================================
-# 02_Spatial_Models.R
 # Corporate Ownership & Crime — Spatial Econometric Models
 # Study area: St. Louis County, MO
 # Scales: Census tract + Grid cell
@@ -11,13 +9,18 @@
 # MODEL STRUCTURE:
 #   A. Cross-sectional SAR (2024) — descriptive, between-unit identification
 #   B. Spatial panel SAR (2018-2024) — within-tract identification
-#      B1. Individual FE (preferred)
-#      B2. Two-way FE (robustness)
-#   C. Robustness checks
-#      C1. SDM panel (individual FE, k=4) — Wlag.corporate insignificant,
+#      B1. Two-way FE (PREFERRED)
+#          Rationale: year FE absorbs common temporal shocks (COVID-19 pandemic,
+#          post-pandemic crime surge). AIC favors two-way over individual FE
+#          (delta AIC = 308 personal, 225 property). Rho plausible (0.20-0.32)
+#          vs individual FE where temporal autocorrelation (r=0.875) inflates
+#          rho to 0.73.
+#      B2. Individual FE (robustness)
+#   C. Robustness checks (two-way FE)
+#      C1. SDM panel (two-way FE, k=4) — Wlag.corporate insignificant,
 #          confirms SAR correctly specified
-#      C2. SAR panel (individual FE, k=5) — confirms robustness to
-#          weights choice; AIC improves relative to k=4
+#      C2. SAR panel (two-way FE, k=5) — confirms robustness to
+#          weights choice
 #
 # SPATIAL WEIGHTS:
 #   - Moran's I (in 01_EDA_Maps.R): queen contiguity (tracts), k-NN k=5 (grid)
@@ -33,8 +36,6 @@
 #   - Panel: 149 balanced tracts, 2018-2024 (pspatreg requirement)
 # =============================================================================
 
-rm(list=ls())
-
 library(tidyverse)
 library(sf)
 library(spdep)
@@ -42,7 +43,7 @@ library(spatialreg)
 library(pspatreg)
 library(car)
 
-#setwd("C:/Users/murta/OneDrive - Northern Illinois University/Desktop/NIU/Thesis/Ownership_Crime/Github/Crime_Ownership")
+setwd("C:/Users/murta/OneDrive - Northern Illinois University/Desktop/NIU/Thesis/Ownership_Crime/Github/Crime_Ownership")
 
 # =============================================================================
 # 1. LOAD DATA
@@ -220,23 +221,13 @@ lw_bal_k5 <- nb2listw(knn5_bal, style="W")
 
 set.seed(123)
 
-# B1. Individual FE (preferred)
-sar_panel_pers_1way <- pspatfit(f_tract_red, data = panel_tract_pers,
-                                 listw = lw_bal, demean = TRUE,
-                                 eff_demean = "individual", type = "sar",
-                                 index = c("GEOID", "year"))
+# =============================================================================
+# B1. Two-way FE (PREFERRED)
+# Rationale: absorbs common temporal shocks (COVID-19, post-pandemic crime
+# surge). AIC favors two-way FE. Rho plausible (0.20-0.32) vs individual FE
+# where temporal autocorrelation inflates rho to ~0.73.
+# =============================================================================
 
-sar_panel_prop_1way <- pspatfit(f_tract_red, data = panel_tract_prop,
-                                 listw = lw_bal, demean = TRUE,
-                                 eff_demean = "individual", type = "sar",
-                                 index = c("GEOID", "year"))
-
-cat("\n===== SAR Panel: Personal (individual FE) =====\n")
-summary(sar_panel_pers_1way)
-cat("\n===== SAR Panel: Property (individual FE) =====\n")
-summary(sar_panel_prop_1way)
-
-# B2. Two-way FE (robustness)
 sar_panel_pers_2way <- pspatfit(f_tract_red, data = panel_tract_pers,
                                  listw = lw_bal, demean = TRUE,
                                  eff_demean = "twoways", type = "sar",
@@ -247,12 +238,40 @@ sar_panel_prop_2way <- pspatfit(f_tract_red, data = panel_tract_prop,
                                  eff_demean = "twoways", type = "sar",
                                  index = c("GEOID", "year"))
 
-cat("\n===== SAR Panel: Personal (two-way FE) =====\n")
+cat("\n===== SAR Panel: Personal (two-way FE — PREFERRED) =====\n")
 summary(sar_panel_pers_2way)
-cat("\n===== SAR Panel: Property (two-way FE) =====\n")
+cat("\n===== SAR Panel: Property (two-way FE — PREFERRED) =====\n")
 summary(sar_panel_prop_2way)
 
-# Panel impacts (individual FE)
+# Two-way FE impacts (PREFERRED)
+imp_panel_pers_2way <- impactspar(sar_panel_pers_2way, listw = lw_bal)
+imp_panel_prop_2way <- impactspar(sar_panel_prop_2way, listw = lw_bal)
+
+cat("\n===== Impacts: Personal (panel, two-way FE) =====\n")
+summary(imp_panel_pers_2way)
+cat("\n===== Impacts: Property (panel, two-way FE) =====\n")
+summary(imp_panel_prop_2way)
+
+# =============================================================================
+# B2. Individual FE (robustness)
+# =============================================================================
+
+sar_panel_pers_1way <- pspatfit(f_tract_red, data = panel_tract_pers,
+                                 listw = lw_bal, demean = TRUE,
+                                 eff_demean = "individual", type = "sar",
+                                 index = c("GEOID", "year"))
+
+sar_panel_prop_1way <- pspatfit(f_tract_red, data = panel_tract_prop,
+                                 listw = lw_bal, demean = TRUE,
+                                 eff_demean = "individual", type = "sar",
+                                 index = c("GEOID", "year"))
+
+cat("\n===== SAR Panel: Personal (individual FE — robustness) =====\n")
+summary(sar_panel_pers_1way)
+cat("\n===== SAR Panel: Property (individual FE — robustness) =====\n")
+summary(sar_panel_prop_1way)
+
+# Individual FE impacts (robustness)
 imp_panel_pers <- impactspar(sar_panel_pers_1way, listw = lw_bal)
 imp_panel_prop <- impactspar(sar_panel_prop_1way, listw = lw_bal)
 
@@ -261,48 +280,66 @@ summary(imp_panel_pers)
 cat("\n===== Impacts: Property (panel, individual FE) =====\n")
 summary(imp_panel_prop)
 
+# AIC comparison
+cat("\n===== AIC: Individual vs Two-way FE =====\n")
+cat(sprintf("Individual FE — Personal: %.1f | Property: %.1f\n",
+            sar_panel_pers_1way$aic, sar_panel_prop_1way$aic))
+cat(sprintf("Two-way FE   — Personal: %.1f | Property: %.1f\n",
+            sar_panel_pers_2way$aic, sar_panel_prop_2way$aic))
+cat(sprintf("Delta AIC    — Personal: %.1f | Property: %.1f\n",
+            sar_panel_pers_1way$aic - sar_panel_pers_2way$aic,
+            sar_panel_prop_1way$aic - sar_panel_prop_2way$aic))
+
 # =============================================================================
-# 6. ROBUSTNESS CHECKS
+# 6. ROBUSTNESS CHECKS (two-way FE)
 # =============================================================================
 
-# C1. SDM panel (individual FE, k=4)
+# C1. SDM panel (two-way FE, k=4)
 sdm_panel_pers <- pspatfit(f_tract_red, data = panel_tract_pers,
                             listw = lw_bal, demean = TRUE,
-                            eff_demean = "individual", type = "sdm",
+                            eff_demean = "twoways", type = "sdm",
                             index = c("GEOID", "year"))
 
 sdm_panel_prop <- pspatfit(f_tract_red, data = panel_tract_prop,
                             listw = lw_bal, demean = TRUE,
-                            eff_demean = "individual", type = "sdm",
+                            eff_demean = "twoways", type = "sdm",
                             index = c("GEOID", "year"))
 
-cat("\n===== SDM Panel: Personal =====\n")
+cat("\n===== SDM Panel: Personal (two-way FE) =====\n")
 summary(sdm_panel_pers)
-cat("\n===== SDM Panel: Property =====\n")
+cat("\n===== SDM Panel: Property (two-way FE) =====\n")
 summary(sdm_panel_prop)
 
-# C2. SAR panel k=5 (individual FE)
+# SDM impacts
+imp_sdm_pers <- impactspar(sdm_panel_pers, listw = lw_bal)
+imp_sdm_prop <- impactspar(sdm_panel_prop, listw = lw_bal)
+
+# C2. SAR panel k=5 (two-way FE)
 sar_panel_pers_k5 <- pspatfit(f_tract_red, data = panel_tract_pers,
                                listw = lw_bal_k5, demean = TRUE,
-                               eff_demean = "individual", type = "sar",
+                               eff_demean = "twoways", type = "sar",
                                index = c("GEOID", "year"))
 
 sar_panel_prop_k5 <- pspatfit(f_tract_red, data = panel_tract_prop,
                                listw = lw_bal_k5, demean = TRUE,
-                               eff_demean = "individual", type = "sar",
+                               eff_demean = "twoways", type = "sar",
                                index = c("GEOID", "year"))
 
-cat("\n===== SAR Panel k=5: Personal =====\n")
+cat("\n===== SAR Panel k=5: Personal (two-way FE) =====\n")
 summary(sar_panel_pers_k5)
-cat("\n===== SAR Panel k=5: Property =====\n")
+cat("\n===== SAR Panel k=5: Property (two-way FE) =====\n")
 summary(sar_panel_prop_k5)
 
+# SAR k=5 impacts
+imp_k5_pers <- impactspar(sar_panel_pers_k5, listw = lw_bal_k5)
+imp_k5_prop <- impactspar(sar_panel_prop_k5, listw = lw_bal_k5)
+
 cat("\n===== AIC COMPARISON =====\n")
-cat(sprintf("SAR k=4  Personal: %.1f | Property: %.1f\n",
-            sar_panel_pers_1way$aic, sar_panel_prop_1way$aic))
-cat(sprintf("SDM k=4  Personal: %.1f | Property: %.1f\n",
+cat(sprintf("Two-way SAR k=4  Personal: %.1f | Property: %.1f\n",
+            sar_panel_pers_2way$aic, sar_panel_prop_2way$aic))
+cat(sprintf("Two-way SDM k=4  Personal: %.1f | Property: %.1f\n",
             sdm_panel_pers$aic,      sdm_panel_prop$aic))
-cat(sprintf("SAR k=5  Personal: %.1f | Property: %.1f\n",
+cat(sprintf("Two-way SAR k=5  Personal: %.1f | Property: %.1f\n",
             sar_panel_pers_k5$aic,   sar_panel_prop_k5$aic))
 
 # =============================================================================
@@ -312,11 +349,14 @@ cat(sprintf("SAR k=5  Personal: %.1f | Property: %.1f\n",
 save(sar_cs_tract_pers, sar_cs_tract_prop,
      sar_cs_grid_pers,  sar_cs_grid_prop,
      imp_cs_tract_pers, imp_cs_tract_prop,
-     sar_panel_pers_1way, sar_panel_prop_1way,
-     sar_panel_pers_2way, sar_panel_prop_2way,
-     imp_panel_pers, imp_panel_prop,
-     sdm_panel_pers, sdm_panel_prop,
-     sar_panel_pers_k5, sar_panel_prop_k5,
+     sar_panel_pers_2way, sar_panel_prop_2way,   # PREFERRED
+     imp_panel_pers_2way, imp_panel_prop_2way,   # PREFERRED impacts
+     sar_panel_pers_1way, sar_panel_prop_1way,   # robustness
+     imp_panel_pers,      imp_panel_prop,         # robustness impacts
+     sdm_panel_pers,      sdm_panel_prop,
+     imp_sdm_pers,        imp_sdm_prop,
+     sar_panel_pers_k5,   sar_panel_prop_k5,
+     imp_k5_pers,         imp_k5_prop,
      tract_lw_cs, tract_lw_prop,
      grid_knn_lw_cs, grid_knn_lw_prop,
      lw_bal, lw_bal_k5, balanced_geoids,
